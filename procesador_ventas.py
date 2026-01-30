@@ -3,75 +3,85 @@ import re
 from datetime import datetime
 
 def procesar_todas_las_sucursales(archivo_entrada, archivo_salida):
-    # Fecha por defecto (hoy) por si no se encuentra en el archivo
-    fecha_reporte = datetime.now().strftime('%Y-%m-%d')
     registros = []
     sucursal_id = None
     sucursal_nombre = None
+    fecha_reporte = None
 
-    with open(archivo_entrada, 'r', encoding='latin-1') as f:
+    # Leemos con latin-1 para no perder caracteres
+    with open(archivo_entrada, 'r', encoding='latin-1', errors='replace') as f:
         lineas = f.readlines()
 
-    # --- PASO 1: Buscar la fecha en todo el archivo ---
     for linea in lineas:
-        # Busca patrones como 09/01/2026 o 09-01-2026
-        match_fecha = re.search(r'(\d{2})[/-](\d{2})[/-](\d{4})', linea)
-        if match_fecha:
-            dia, mes, anio = match_fecha.groups()
-            fecha_reporte = f"{anio}-{mes}-{dia}"
-            print(f"Fecha detectada en el archivo: {fecha_reporte}")
-            break # Detenemos la búsqueda al encontrar la primera fecha
+        linea_limpia = linea.strip()
+        if not linea_limpia: continue
 
-    # --- PASO 2: Procesar los datos ---
-    for num_linea, linea in enumerate(lineas, 1):
-        linea = linea.strip('\n')
-        
-        # Detectar Sucursal
-        if "Sucursal" in linea:
-            match_suc = re.search(r'Sucursal\s+(\d+)\s+(.+)', linea)
+        # 1. Capturar Fecha
+        if "Del " in linea_limpia and not fecha_reporte:
+            match_f = re.search(r'(\d{2})/(\d{2})/(\d{4})', linea_limpia)
+            if match_f:
+                fecha_reporte = f"{match_f.group(1)}/{match_f.group(2)}/{match_f.group(3)}"
+
+        # 2. Capturar Sucursal
+        if "Sucursal" in linea_limpia:
+            match_suc = re.search(r'Sucursal\s+(\d+)\s+(.+)', linea_limpia)
             if match_suc:
                 sucursal_id = match_suc.group(1).strip()
-                # Limpiamos el nombre de restos numéricos que vimos en tu terminal
                 sucursal_nombre = re.split(r'\s{2,}', match_suc.group(2).strip())[0]
-                print(f"Procesando Sucursal: {sucursal_id} - {sucursal_nombre}")
             continue
 
-        # Detectar Artículos
-        match_art = re.search(r'(\d{5,9})\s+(.*?)\s+([\d\.,]+)(?=\s|\Z)', linea)
-        
-        if match_art and sucursal_id:
-            try:
-                codigo = match_art.group(1)
-                descripcion = match_art.group(2).strip()
-                total_raw = match_art.group(3)
+        # 3. Capturar Artículos (Técnica de recorte central)
+        if linea_limpia.startswith("Art"):
+            # Buscamos el código (segunda palabra)
+            partes = linea_limpia.split()
+            if len(partes) < 6: continue
+            
+            codigo = partes[1]
+            if not codigo.isdigit(): continue
+
+            # --- LÓGICA DE EXTRACCIÓN TOTAL ---
+            # 1. Quitamos el encabezado "Articulo [CODIGO]"
+            inicio_desc = linea.find(codigo) + len(codigo)
+            contenido_desde_desc = linea[inicio_desc:]
+            
+            # 2. Buscamos donde empiezan las columnas numéricas finales (precio/cantidad)
+            # Buscamos el patrón de los asteriscos "****" o el primer número de la columna de precio
+            match_final = re.search(r'\s+(\d+[\d\.,]*)\s+(\d+)\s+\*{4}', contenido_desde_desc)
+            
+            if match_final:
+                # La descripción es todo lo que hay DESDE el código HASTA los números finales
+                fin_desc = match_final.start()
+                descripcion = contenido_desde_desc[:fin_desc].strip()
                 
-                total_str = total_raw.replace('.', '').replace(',', '.')
+                # Limpiamos los caracteres extraños (rombos)
+                descripcion = re.sub(r'[^\w\s\.\-\/]', '', descripcion)
+                # Quitamos espacios dobles
+                descripcion = ' '.join(descripcion.split())
                 
+                cantidad_raw = match_final.group(1)
+                cantidad_str = cantidad_raw.replace('.', '').replace(',', '.')
+
                 registros.append({
-                    'fecha': fecha_reporte,
-                    'sucursal_id': int(sucursal_id),
-                    'sucursal_nombre': sucursal_nombre,
-                    'codigo': int(codigo),
+                    'fecha': fecha_reporte if fecha_reporte else "",
+                    'sucursal_id': sucursal_id,
+                    'sucursal_no': sucursal_nombre,
+                    'codigo': codigo,
                     'descripcion': descripcion,
-                    'cantidad': float(total_str) if total_str else 0.0
+                    'cantidad': cantidad_str
                 })
-            except ValueError:
-                continue
 
     # Guardar a CSV
-    with open(archivo_salida, 'w', newline='', encoding='utf-8') as f:
-        campos = ['fecha', 'sucursal_id', 'sucursal_nombre', 'codigo', 'descripcion', 'cantidad']
+    with open(archivo_salida, 'w', newline='', encoding='utf-8-sig') as f:
+        campos = ['fecha', 'sucursal_id', 'sucursal_no', 'codigo', 'descripcion', 'cantidad']
         writer = csv.DictWriter(f, fieldnames=campos)
         writer.writeheader()
         writer.writerows(registros)
 
-    return len(registros), fecha_reporte
+    return len(registros)
 
 # Ejecutar
 try:
-    total, fecha_usada = procesar_todas_las_sucursales('zdiaria.txt', 'ventas_todas_las_sucursales.csv')
-    print(f"--- PROCESO TERMINADO ---")
-    print(f"Fecha aplicada: {fecha_usada}")
-    print(f"Total de registros: {total}")
-except FileNotFoundError:
-    print("Error: No se encontró el archivo 'zdiaria.txt'")
+    total = procesar_todas_las_sucursales('zdiaria.txt', 'ventas_final.csv')
+    print(f"✅ ¡Proceso terminado! Se cargaron {total} productos con descripción completa.")
+except Exception as e:
+    print(f"❌ Error: {e}")
