@@ -4,7 +4,7 @@ import os
 
 def procesar_lista():
     # Buscar automáticamente el CSV más reciente del proveedor
-    archivos = glob.glob("dferreyrat*.csv")
+    archivos = glob.glob("../dferreyrat*.csv")
 
     if not archivos:
         raise FileNotFoundError("No se encontró ningún archivo dferreyrat*.csv")

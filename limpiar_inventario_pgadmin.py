@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 def limpiar_inventario_definitivo():
-    archivo_entrada = "zinventa.txt"
+    archivo_entrada = "../zinventa.txt"
     archivo_salida = "inventario_precios_final.csv"
     
     columnas = [

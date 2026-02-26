@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 def limpiar_archivo():
-    archivo_entrada = "zventas.txt"
+    archivo_entrada = "../zventas.txt"
     archivo_salida = "ventas_final_para_pgadmin.csv"
     
     columnas = [
