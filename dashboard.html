@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ventas - Retail Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="productos.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-light: #60a5fa;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left h1 {
+            color: var(--primary);
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--text-primary);
+            font-size: 20px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: border 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .search-box::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .product-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .product-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .product-list::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .product-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .product-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .product-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .product-code {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .product-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .abc-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .abc-a {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .abc-b {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .abc-c {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        select {
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--primary);
+            color: var(--primary-light);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: #f87171;
+        }
+
+        /* CALENDARIO */
+        .calendar-container {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: var(--primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day-name {
+            text-align: center;
+            padding: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .calendar-day:hover {
+            border-color: var(--primary);
+        }
+
+        .calendar-day.has-data {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .calendar-day.selected {
+            background: var(--success);
+            color: white;
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+
+        .day-card {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .day-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .day-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* MAPA DE CALOR */
+        .heatmap-container {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        .heatmap-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 1px;
+            font-size: 14px;
+        }
+
+        .heatmap-table th {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 10px 6px;
+            text-align: center;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 13px;
+        }
+
+        .heatmap-table td {
+            padding: 12px 6px;
+            text-align: center;
+            min-width: 55px;
+            font-weight: 700;
+            background: var(--bg-secondary);
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .heatmap-table td:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .product-name-cell {
+            position: sticky;
+            left: 0;
+            background: var(--bg-secondary) !important;
+            text-align: left;
+            padding: 12px 16px;
+            min-width: 350px;
+            font-weight: 600;
+            border-right: 2px solid var(--border);
+            z-index: 9;
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        /* Pelotitas de colores - MÁS GRANDES E IMPACTANTES */
+        .heat-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .heat-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        /* PALETA DE COLORES IMPACTANTE */
+        .heat-0 { background: #ef4444; } /* ROJO INTENSO - Sin ventas */
+        .heat-1 { background: #0ea5e9; } /* Cyan brillante - 1-50 */
+        .heat-2 { background: #06b6d4; } /* Cyan - 51-100 */
+        .heat-3 { background: #14b8a6; } /* Teal - 101-150 */
+        .heat-4 { background: #10b981; } /* Verde esmeralda - 151-200 */
+        .heat-5 { background: #22c55e; } /* Verde - 201-250 */
+        .heat-6 { background: #84cc16; } /* Lima - 251-300 */
+        .heat-7 { background: #eab308; } /* Amarillo oro - 301-400 */
+        .heat-8 { background: #f97316; } /* Naranja - 401-500 */
+        .heat-9 { background: #fb923c; } /* Naranja claro - 501-750 */
+        .heat-10 { background: #fbbf24; } /* Amarillo brillante - 751+ */
+
+        .heatmap-legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 15px 0 10px 0;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .header-actions, .tabs, .search-box {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            .calendar-grid {
+                gap: 4px;
+            }
+
+            .calendar-day {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>📊 Dashboard de Ventas</h1>
+                <div class="header-subtitle">Análisis de rendimiento y métricas de retail</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="exportarPDF()">
+                    📄 Exportar PDF
+                </button>
+                <button class="btn btn-success" onclick="window.print()">
+                    🖨️ Imprimir
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="statDias">-</div>
+                <div class="stat-label">Días con datos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statProductos">-</div>
+                <div class="stat-label">Productos únicos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statSucursales">-</div>
+                <div class="stat-label">Sucursales activas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Unidades vendidas</div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="card">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <h3>Cargando datos de ventas...</h3>
+                <p>Por favor espera</p>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div id="error" class="card" style="display:none">
+            <div class="alert alert-danger">
+                <strong>❌ Error al cargar datos</strong>
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" style="display:none">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('calendario')">📅 Calendario</button>
+                <button class="tab" onclick="switchTab('evolucion')">📈 Evolución</button>
+                <button class="tab" onclick="switchTab('top')">🏆 Top Ventas</button>
+                <button class="tab" onclick="switchTab('abc')">🎯 Análisis ABC</button>
+                <button class="tab" onclick="switchTab('semana')">📊 Por Día</button>
+                <button class="tab" onclick="switchTab('sucursales')">🏢 Sucursales</button>
+                <button class="tab" onclick="switchTab('heatmap')">🔥 Mapa de Calor</button>
+                <button class="tab" onclick="switchTab('historico')">📈 Histórico Mensual</button>
+            </div>
+
+            <!-- Tab: Calendario -->
+            <div id="tabCalendario" class="tab-content active">
+                <div class="card">
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <h3 id="calendarioTitulo">Febrero 2026</h3>
+                            <div class="calendar-nav">
+                                <button onclick="cambiarMes(-1)">◀ Anterior</button>
+                                <button onclick="cambiarMes(1)">Siguiente ▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendarioGrid"></div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        💡 <strong>Días resaltados</strong> = Tienen datos de ventas registrados. Click para ver detalles.
+                    </div>
+
+                    <div id="detallesDia" style="display:none">
+                        <h3 style="color: var(--primary); margin: 20px 0 10px;">
+                            📊 Ventas del <span id="fechaSeleccionada"></span>
+                        </h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="ventasDia">-</div>
+                                <div class="stat-label">Unidades vendidas</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="productosDia">-</div>
+                                <div class="stat-label">Productos diferentes</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Evolución -->
+            <div id="tabEvolucion" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📈 Evolución de Ventas por Producto</h2>
+                    </div>
+                    <input type="text" class="search-box" id="searchProducto" 
+                           placeholder="🔍 Buscar producto..." 
+                           oninput="buscarProducto(this.value)">
+                    
+                    <div class="filter-section">
+                        <select id="sucursalFilter" onchange="actualizarFiltroSucursal()">
+                            <option value="todas">📍 Todas las sucursales</option>
+                        </select>
+                    </div>
+
+                    <div id="productoSeleccionado" style="display:none">
+                        <div class="alert alert-info">
+                            <strong id="nombreProductoSeleccionado"></strong><br>
+                            Código: <span id="codigoProductoSeleccionado"></span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartEvolucion"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="product-list" id="listaProductos"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Top -->
+            <div id="tabTop" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏆 Productos Más Vendidos</h2>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <select id="topSucursalFilter" onchange="cargarTopProductos()">
+                            <option value="todas">📍 Todas las sucursales</option>
+                        </select>
+                        <select id="topLimit" onchange="cargarTopProductos()">
+                            <option value="10">Top 10</option>
+                            <option value="20">Top 20</option>
+                            <option value="50">Top 50</option>
+                        </select>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="chartTop"></canvas>
+                    </div>
+
+                    <div class="product-list" id="listaTop"></div>
+                </div>
+            </div>
+
+            <!-- Tab: ABC -->
+            <div id="tabAbc" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🎯 Análisis ABC de Productos</h2>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Clasificación: <span class="abc-badge abc-a">A</span> = 80% ventas  
+                        <span class="abc-badge abc-b">B</span> = 15% ventas  
+                        <span class="abc-badge abc-c">C</span> = 5% ventas
+                    </p>
+
+                    <div class="chart-container">
+                        <canvas id="chartABC"></canvas>
+                    </div>
+
+                    <div class="product-list" id="listaABC"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Semana -->
+            <div id="tabSemana" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 Ventas por Día de la Semana</h2>
+                    </div>
+
+                    <div id="infoProductoSemana" style="display:none">
+                        <div class="alert alert-info">
+                            <strong id="nombreProductoSemana"></strong><br>
+                            Código: <span id="codigoProductoSemana"></span> • 
+                            Sucursal: <span id="sucursalProductoSemana"></span>
+                        </div>
+                    </div>
+
+                    <div id="mensajeSemana" class="alert alert-info">
+                        📋 Selecciona un producto en la pestaña "Evolución" para ver sus ventas por día de la semana
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="chartSemana"></canvas>
+                    </div>
+
+                    <div id="listaSemana" style="margin-top: 30px"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Sucursales -->
+            <div id="tabSucursales" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🏢 Comparación entre Sucursales</h2>
+                    </div>
+
+                    <div id="infoProductoSucursales" style="display:none">
+                        <div class="alert alert-info">
+                            <strong id="nombreProductoSucursales"></strong><br>
+                            Código: <span id="codigoProductoSucursales"></span>
+                        </div>
+                    </div>
+
+                    <div id="mensajeSucursales" class="alert alert-info">
+                        📋 Selecciona un producto en la pestaña "Evolución" para ver sus ventas por sucursal
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="chartSucursales"></canvas>
+                    </div>
+
+                    <div class="product-list" id="listaSucursales"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Mapa de Calor -->
+            <div id="tabHeatmap" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🔥 Mapa de Calor - Rotación de Productos</h2>
+                    </div>
+
+                    <div class="alert alert-info">
+                        📊 Busca un producto para ver su rotación diaria
+                    </div>
+
+                    <div class="search-box-container" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" class="search-box" id="searchHeatmap" 
+                               placeholder="🔍 Buscar producto por nombre o código... (presiona Enter)" 
+                               onkeypress="if(event.key === 'Enter') buscarProductoHeatmap(this.value)"
+                               style="flex: 1; margin-bottom: 0;">
+                        <button class="btn btn-primary" onclick="buscarProductoHeatmap(document.getElementById('searchHeatmap').value)" style="white-space: nowrap;">
+                            Buscar
+                        </button>
+                    </div>
+
+                    <div class="filter-section">
+                        <select id="heatmapSucursal" onchange="buscarProductoHeatmap(document.getElementById('searchHeatmap').value)">
+                            <option value="todas">📍 Todas las sucursales</option>
+                        </select>
+                        <select id="heatmapMes" onchange="buscarProductoHeatmap(document.getElementById('searchHeatmap').value)">
+                            <option value="">📅 Todo el período</option>
+                            <option value="last1">📅 Último mes</option>
+                            <option value="last2">📅 Últimos 2 meses</option>
+                            <option value="last3">📅 Últimos 3 meses</option>
+                            <option value="last6">📅 Últimos 6 meses</option>
+                            <option disabled>──────────</option>
+                        </select>
+                    </div>
+
+                    <div class="heatmap-legend">
+                        <div class="legend-item">
+                            <div class="heat-dot heat-0"></div>
+                            <span>0 (Sin ventas)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-1"></div>
+                            <span>1-50</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-3"></div>
+                            <span>101-150</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-5"></div>
+                            <span>201-250</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-7"></div>
+                            <span>301-400</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-9"></div>
+                            <span>501-750</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="heat-dot heat-10"></div>
+                            <span>751+</span>
+                        </div>
+                    </div>
+
+                    <div id="heatmapResults" style="display:none">
+                        <div class="heatmap-container">
+                            <table class="heatmap-table" id="heatmapTable">
+                                <thead id="heatmapHeader"></thead>
+                                <tbody id="heatmapBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="heatmapPlaceholder" class="alert alert-info">
+                        💡 Escribe al menos 2 caracteres para buscar productos
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Histórico Mensual -->
+            <div id="tabHistorico" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📈 Histórico Mensual - Ventas por Mes</h2>
+                    </div>
+
+                    <div class="alert alert-info">
+                        📊 Vista consolidada de ventas mensuales. El mes actual muestra ventas parciales hasta el día de hoy.
+                    </div>
+
+                    <div class="search-box-container" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" class="search-box" id="searchHistorico" 
+                               placeholder="🔍 Buscar producto por nombre o código... (presiona Enter)" 
+                               onkeypress="if(event.key === 'Enter') buscarProductoHistorico(this.value)"
+                               style="flex: 1; margin-bottom: 0;">
+                        <button class="btn btn-primary" onclick="buscarProductoHistorico(document.getElementById('searchHistorico').value)" style="white-space: nowrap;">
+                            Buscar
+                        </button>
+                    </div>
+
+                    <div class="filter-section">
+                        <select id="historicoSucursal" onchange="buscarProductoHistorico(document.getElementById('searchHistorico').value)">
+                            <option value="todas">📍 Todas las sucursales</option>
+                        </select>
+                        <select id="historicoOrden" onchange="buscarProductoHistorico(document.getElementById('searchHistorico').value)">
+                            <option value="total">Ordenar por: Total</option>
+                            <option value="nombre">Ordenar por: Nombre</option>
+                        </select>
+                    </div>
+
+                    <div id="historicoResults" style="display:none">
+                        <div id="historicoActualizacion" style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px; text-align: right;"></div>
+                        <div class="heatmap-container">
+                            <table class="heatmap-table" id="historicoTable">
+                                <thead id="historicoHeader"></thead>
+                                <tbody id="historicoBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="historicoPlaceholder" class="alert alert-info">
+                        💡 Escribe al menos 2 caracteres para buscar productos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ventasData = [];
+        let productosUnicos = [];
+        let sucursalesUnicas = [];
+        let productoSeleccionado = null;
+        let fechasConDatos = new Set();
+        let mesActual = new Date();
+        let diaSeleccionado = null;
+        
+        let charts = {
+            evolucion: null,
+            top: null,
+            abc: null,
+            semana: null,
+            sucursales: null
+        };
+
+        // Configuración de Chart.js para modo oscuro
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+
+        async function cargarDatos() {
+            try {
+                const response = await fetch('ventas_data.json');
+                if (!response.ok) throw new Error('No se encontró ventas_data.json');
+                
+                ventasData = await response.json();
+                if (!ventasData || ventasData.length === 0) throw new Error('Sin datos');
+
+                procesarDatos();
+                mostrarEstadisticas();
+                inicializarFiltros();
+                renderizarCalendario();
+                cargarTopProductos();
+                cargarAnalisisABC();
+                cargarVentasPorSemana();
+                cargarVentasPorSucursal();
+                inicializarFiltrosHeatmap();
+                inicializarFiltrosHistorico();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message;
+            }
+        }
+
+        function procesarDatos() {
+            const productosMap = new Map();
+            const sucursalesSet = new Set();
+
+            ventasData.forEach(venta => {
+                if (!productosMap.has(venta.codigo)) {
+                    productosMap.set(venta.codigo, {
+                        codigo: venta.codigo,
+                        nombre: venta.descripcion,
+                        totalVentas: 0
+                    });
+                }
+                productosMap.get(venta.codigo).totalVentas += venta.cantidad;
+                sucursalesSet.add(venta.sucursal_nombre);
+                fechasConDatos.add(venta.fecha);
+            });
+
+            productosUnicos = Array.from(productosMap.values()).sort((a, b) => b.totalVentas - a.totalVentas);
+            sucursalesUnicas = Array.from(sucursalesSet);
+        }
+
+        function mostrarEstadisticas() {
+            const totalUnidades = ventasData.reduce((sum, v) => sum + v.cantidad, 0);
+
+            document.getElementById('statDias').textContent = fechasConDatos.size;
+            document.getElementById('statProductos').textContent = productosUnicos.length.toLocaleString();
+            document.getElementById('statSucursales').textContent = sucursalesUnicas.length;
+            document.getElementById('statTotal').textContent = totalUnidades.toLocaleString();
+        }
+
+        function inicializarFiltros() {
+            [document.getElementById('sucursalFilter'), document.getElementById('topSucursalFilter')].forEach(select => {
+                sucursalesUnicas.forEach(sucursal => {
+                    const option = document.createElement('option');
+                    option.value = sucursal;
+                    option.textContent = `📍 ${sucursal}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // CALENDARIO
+        function renderizarCalendario() {
+            const año = mesActual.getFullYear();
+            const mes = mesActual.getMonth();
+            
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            document.getElementById('calendarioTitulo').textContent = `${meses[mes]} ${año}`;
+            
+            const primerDia = new Date(año, mes, 1).getDay();
+            const ultimoDia = new Date(año, mes + 1, 0).getDate();
+            
+            const grid = document.getElementById('calendarioGrid');
+            grid.innerHTML = '';
+            
+            // Días de la semana
+            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(dia => {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day-name';
+                cell.textContent = dia;
+                grid.appendChild(cell);
+            });
+            
+            // Días vacíos antes del primer día
+            for (let i = 0; i < primerDia; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day other-month';
+                grid.appendChild(cell);
+            }
+            
+            // Días del mes
+            for (let dia = 1; dia <= ultimoDia; dia++) {
+                const fecha = `${año}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                cell.textContent = dia;
+                
+                if (fechasConDatos.has(fecha)) {
+                    cell.classList.add('has-data');
+                    cell.onclick = () => seleccionarDia(fecha);
+                }
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        function cambiarMes(delta) {
+            mesActual.setMonth(mesActual.getMonth() + delta);
+            renderizarCalendario();
+        }
+
+        function seleccionarDia(fecha) {
+            diaSeleccionado = fecha;
+            
+            const ventasDia = ventasData.filter(v => v.fecha === fecha);
+            const totalUnidades = ventasDia.reduce((sum, v) => sum + v.cantidad, 0);
+            const productosUnicos = new Set(ventasDia.map(v => v.codigo)).size;
+            
+            document.getElementById('fechaSeleccionada').textContent = 
+                new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            
+            document.getElementById('ventasDia').textContent = totalUnidades.toLocaleString();
+            document.getElementById('productosDia').textContent = productosUnicos;
+            document.getElementById('detallesDia').style.display = 'block';
+            
+            // Actualizar clases de los días
+            document.querySelectorAll('.calendar-day').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            const tabId = 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1);
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function buscarProducto(query) {
+            const lista = document.getElementById('listaProductos');
+            
+            if (query.length < 2) {
+                lista.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">Escribe al menos 2 caracteres...</p>';
+                return;
+            }
+
+            const queryLower = query.toLowerCase();
+            const sucursalFiltro = document.getElementById('sucursalFilter').value;
+            
+            // Filtrar productos que coincidan con la búsqueda
+            let resultados = productosUnicos.filter(p => 
+                p.nombre.toLowerCase().includes(queryLower) || 
+                p.codigo.toString().includes(query)
+            );
+
+            // Si hay sucursal seleccionada, ordenar por ventas en esa sucursal
+            if (sucursalFiltro !== 'todas') {
+                resultados = resultados.map(p => {
+                    const ventasSucursal = ventasData
+                        .filter(v => v.codigo === p.codigo && v.sucursal_nombre === sucursalFiltro)
+                        .reduce((sum, v) => sum + v.cantidad, 0);
+                    
+                    return {
+                        ...p,
+                        ventasSucursal: ventasSucursal
+                    };
+                }).sort((a, b) => b.ventasSucursal - a.ventasSucursal);
+            } else {
+                // Si es "todas", ordenar por total general
+                resultados.sort((a, b) => b.totalVentas - a.totalVentas);
+            }
+
+            resultados = resultados.slice(0, 20);
+
+            if (resultados.length === 0) {
+                lista.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">Sin resultados</p>';
+                return;
+            }
+
+            lista.innerHTML = resultados.map(p => {
+                const cantidad = sucursalFiltro !== 'todas' ? p.ventasSucursal : p.totalVentas;
+                const etiqueta = sucursalFiltro !== 'todas' ? `en ${sucursalFiltro}` : 'total';
+                
+                return `
+                    <div class="product-item" onclick="seleccionarProducto(${p.codigo})">
+                        <div class="product-info">
+                            <div class="product-name">${p.nombre}</div>
+                            <div class="product-code">Código: ${p.codigo} • ${cantidad.toLocaleString()} un. ${etiqueta}</div>
+                        </div>
+                        <div class="product-value">${cantidad.toLocaleString()} un.</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function seleccionarProducto(codigo) {
+            productoSeleccionado = productosUnicos.find(p => p.codigo === codigo);
+            document.getElementById('nombreProductoSeleccionado').textContent = productoSeleccionado.nombre;
+            document.getElementById('codigoProductoSeleccionado').textContent = productoSeleccionado.codigo;
+            document.getElementById('productoSeleccionado').style.display = 'block';
+            document.getElementById('listaProductos').innerHTML = '';
+            document.getElementById('searchProducto').value = '';
+            
+            actualizarGraficoEvolucion();
+            cargarVentasPorSemanaProducto();
+            cargarVentasPorSucursalProducto();
+        }
+
+        function actualizarFiltroSucursal() {
+            // Si hay un producto seleccionado, actualizar sus gráficos
+            if (productoSeleccionado) {
+                actualizarGraficoEvolucion();
+                cargarVentasPorSemanaProducto();
+            }
+            
+            // Si hay texto en el buscador, refrescar los resultados
+            const searchValue = document.getElementById('searchProducto').value;
+            if (searchValue.length >= 2) {
+                buscarProducto(searchValue);
+            }
+        }
+
+        function actualizarGraficoEvolucion() {
+            if (!productoSeleccionado) return;
+
+            const sucursalFiltro = document.getElementById('sucursalFilter').value;
+            let ventasFiltradas = ventasData.filter(v => v.codigo === productoSeleccionado.codigo);
+            if (sucursalFiltro !== 'todas') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.sucursal_nombre === sucursalFiltro);
+            }
+
+            const ventasPorFecha = {};
+            ventasFiltradas.forEach(v => {
+                ventasPorFecha[v.fecha] = (ventasPorFecha[v.fecha] || 0) + v.cantidad;
+            });
+
+            const fechas = Object.keys(ventasPorFecha).sort();
+            const cantidades = fechas.map(f => ventasPorFecha[f]);
+
+            if (charts.evolucion) charts.evolucion.destroy();
+
+            charts.evolucion = new Chart(document.getElementById('chartEvolucion'), {
+                type: 'line',
+                data: {
+                    labels: fechas.map(f => new Date(f).toLocaleDateString('es-AR')),
+                    datasets: [{
+                        label: 'Unidades vendidas',
+                        data: cantidades,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function cargarTopProductos() {
+            const sucursalFiltro = document.getElementById('topSucursalFilter').value;
+            const limit = parseInt(document.getElementById('topLimit').value);
+
+            let ventasFiltradas = ventasData;
+            if (sucursalFiltro !== 'todas') {
+                ventasFiltradas = ventasData.filter(v => v.sucursal_nombre === sucursalFiltro);
+            }
+
+            const productosMap = new Map();
+            ventasFiltradas.forEach(v => {
+                if (!productosMap.has(v.codigo)) {
+                    productosMap.set(v.codigo, { codigo: v.codigo, nombre: v.descripcion, total: 0 });
+                }
+                productosMap.get(v.codigo).total += v.cantidad;
+            });
+
+            const topProductos = Array.from(productosMap.values())
+                .sort((a, b) => b.total - a.total)
+                .slice(0, limit);
+
+            if (charts.top) charts.top.destroy();
+
+            charts.top = new Chart(document.getElementById('chartTop'), {
+                type: 'bar',
+                data: {
+                    labels: topProductos.map(p => p.nombre.substring(0, 30)),
+                    datasets: [{
+                        label: 'Unidades',
+                        data: topProductos.map(p => p.total),
+                        backgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            document.getElementById('listaTop').innerHTML = topProductos.map((p, i) => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">#${i + 1} - ${p.nombre}</div>
+                        <div class="product-code">Código: ${p.codigo}</div>
+                    </div>
+                    <div class="product-value">${p.total.toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function cargarAnalisisABC() {
+            const totalVentas = productosUnicos.reduce((sum, p) => sum + p.totalVentas, 0);
+            let acumulado = 0;
+
+            const clasificados = productosUnicos.map(p => {
+                acumulado += p.totalVentas;
+                const porcentaje = (acumulado / totalVentas) * 100;
+                return {
+                    ...p,
+                    clase: porcentaje <= 80 ? 'A' : porcentaje <= 95 ? 'B' : 'C'
+                };
+            });
+
+            const conteoABC = {
+                A: clasificados.filter(p => p.clase === 'A').length,
+                B: clasificados.filter(p => p.clase === 'B').length,
+                C: clasificados.filter(p => p.clase === 'C').length
+            };
+
+            if (charts.abc) charts.abc.destroy();
+
+            charts.abc = new Chart(document.getElementById('chartABC'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Clase A (80%)', 'Clase B (15%)', 'Clase C (5%)'],
+                    datasets: [{
+                        data: [conteoABC.A, conteoABC.B, conteoABC.C],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            document.getElementById('listaABC').innerHTML = clasificados.slice(0, 50).map(p => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">
+                            ${p.nombre}
+                            <span class="abc-badge abc-${p.clase.toLowerCase()}">${p.clase}</span>
+                        </div>
+                        <div class="product-code">Código: ${p.codigo}</div>
+                    </div>
+                    <div class="product-value">${p.totalVentas.toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function cargarVentasPorSemana() {
+            const ventasPorDia = {
+                'Lunes': 0, 'Martes': 0, 'Miércoles': 0, 
+                'Jueves': 0, 'Viernes': 0, 'Sábado': 0, 'Domingo': 0
+            };
+
+            ventasData.forEach(v => {
+                const fecha = new Date(v.fecha + 'T00:00:00');
+                const dia = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fecha.getDay()];
+                ventasPorDia[dia] += v.cantidad;
+            });
+
+            const dias = Object.keys(ventasPorDia);
+            const valores = Object.values(ventasPorDia);
+
+            if (charts.semana) charts.semana.destroy();
+
+            charts.semana = new Chart(document.getElementById('chartSemana'), {
+                type: 'bar',
+                data: {
+                    labels: dias,
+                    datasets: [{
+                        label: 'Unidades vendidas',
+                        data: valores,
+                        backgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            document.getElementById('listaSemana').innerHTML = dias.map(dia => `
+                <div class="day-card">
+                    <div class="day-name">📅 ${dia}</div>
+                    <div class="day-value">${ventasPorDia[dia].toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function cargarVentasPorSemanaProducto() {
+            if (!productoSeleccionado) {
+                document.getElementById('mensajeSemana').style.display = 'block';
+                document.getElementById('infoProductoSemana').style.display = 'none';
+                if (charts.semana) {
+                    charts.semana.destroy();
+                    charts.semana = null;
+                }
+                document.getElementById('listaSemana').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('mensajeSemana').style.display = 'none';
+            document.getElementById('infoProductoSemana').style.display = 'block';
+
+            const sucursalFiltro = document.getElementById('sucursalFilter').value;
+            
+            // Actualizar info del producto
+            document.getElementById('nombreProductoSemana').textContent = productoSeleccionado.nombre;
+            document.getElementById('codigoProductoSemana').textContent = productoSeleccionado.codigo;
+            document.getElementById('sucursalProductoSemana').textContent = 
+                sucursalFiltro === 'todas' ? 'Todas' : sucursalFiltro;
+
+            // Filtrar ventas del producto
+            let ventasFiltradas = ventasData.filter(v => v.codigo === productoSeleccionado.codigo);
+            if (sucursalFiltro !== 'todas') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.sucursal_nombre === sucursalFiltro);
+            }
+
+            const ventasPorDia = {
+                'Lunes': 0, 'Martes': 0, 'Miércoles': 0, 
+                'Jueves': 0, 'Viernes': 0, 'Sábado': 0, 'Domingo': 0
+            };
+
+            ventasFiltradas.forEach(v => {
+                const fecha = new Date(v.fecha + 'T00:00:00');
+                const dia = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fecha.getDay()];
+                ventasPorDia[dia] += v.cantidad;
+            });
+
+            const dias = Object.keys(ventasPorDia);
+            const valores = Object.values(ventasPorDia);
+
+            if (charts.semana) charts.semana.destroy();
+
+            charts.semana = new Chart(document.getElementById('chartSemana'), {
+                type: 'bar',
+                data: {
+                    labels: dias,
+                    datasets: [{
+                        label: 'Unidades vendidas',
+                        data: valores,
+                        backgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            document.getElementById('listaSemana').innerHTML = dias.map(dia => `
+                <div class="day-card">
+                    <div class="day-name">📅 ${dia}</div>
+                    <div class="day-value">${ventasPorDia[dia].toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function cargarVentasPorSucursal() {
+            const ventasPorSucursal = {};
+            ventasData.forEach(v => {
+                ventasPorSucursal[v.sucursal_nombre] = (ventasPorSucursal[v.sucursal_nombre] || 0) + v.cantidad;
+            });
+
+            const sucursales = Object.keys(ventasPorSucursal);
+            const totales = sucursales.map(s => ventasPorSucursal[s]);
+
+            if (charts.sucursales) charts.sucursales.destroy();
+
+            charts.sucursales = new Chart(document.getElementById('chartSucursales'), {
+                type: 'doughnut',
+                data: {
+                    labels: sucursales,
+                    datasets: [{
+                        data: totales,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            document.getElementById('listaSucursales').innerHTML = sucursales.map(s => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">📍 ${s}</div>
+                    </div>
+                    <div class="product-value">${ventasPorSucursal[s].toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function cargarVentasPorSucursalProducto() {
+            if (!productoSeleccionado) {
+                document.getElementById('mensajeSucursales').style.display = 'block';
+                document.getElementById('infoProductoSucursales').style.display = 'none';
+                if (charts.sucursales) {
+                    charts.sucursales.destroy();
+                    charts.sucursales = null;
+                }
+                document.getElementById('listaSucursales').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('mensajeSucursales').style.display = 'none';
+            document.getElementById('infoProductoSucursales').style.display = 'block';
+
+            // Actualizar info del producto
+            document.getElementById('nombreProductoSucursales').textContent = productoSeleccionado.nombre;
+            document.getElementById('codigoProductoSucursales').textContent = productoSeleccionado.codigo;
+
+            // Filtrar ventas del producto
+            const ventasFiltradas = ventasData.filter(v => v.codigo === productoSeleccionado.codigo);
+
+            const ventasPorSucursal = {};
+            ventasFiltradas.forEach(v => {
+                ventasPorSucursal[v.sucursal_nombre] = (ventasPorSucursal[v.sucursal_nombre] || 0) + v.cantidad;
+            });
+
+            const sucursales = Object.keys(ventasPorSucursal);
+            const totales = sucursales.map(s => ventasPorSucursal[s]);
+
+            if (charts.sucursales) charts.sucursales.destroy();
+
+            charts.sucursales = new Chart(document.getElementById('chartSucursales'), {
+                type: 'doughnut',
+                data: {
+                    labels: sucursales,
+                    datasets: [{
+                        data: totales,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            document.getElementById('listaSucursales').innerHTML = sucursales.map(s => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">📍 ${s}</div>
+                    </div>
+                    <div class="product-value">${ventasPorSucursal[s].toLocaleString()} un.</div>
+                </div>
+            `).join('');
+        }
+
+        function exportarPDF() {
+            alert('📄 Función de exportar PDF en desarrollo.\n\nPor ahora usa el botón "Imprimir" y guarda como PDF.');
+        }
+
+        // MAPA DE CALOR
+        function inicializarFiltrosHeatmap() {
+            // Poblar filtro de sucursales
+            const selectSucursal = document.getElementById('heatmapSucursal');
+            sucursalesUnicas.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal;
+                option.textContent = `📍 ${sucursal}`;
+                selectSucursal.appendChild(option);
+            });
+
+            // Poblar filtro de meses específicos
+            const mesesSet = new Set();
+            ventasData.forEach(v => {
+                const fecha = new Date(v.fecha + 'T00:00:00');
+                const mesAno = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                mesesSet.add(mesAno);
+            });
+
+            const selectMes = document.getElementById('heatmapMes');
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            Array.from(mesesSet).sort().reverse().forEach(mesAno => {
+                const [ano, mes] = mesAno.split('-');
+                const option = document.createElement('option');
+                option.value = mesAno;
+                option.textContent = `📅 ${meses[parseInt(mes) - 1]} ${ano}`;
+                selectMes.appendChild(option);
+            });
+        }
+
+        function getHeatClass(cantidad) {
+            if (cantidad === 0) return 'heat-0';
+            if (cantidad <= 50) return 'heat-1';
+            if (cantidad <= 100) return 'heat-2';
+            if (cantidad <= 150) return 'heat-3';
+            if (cantidad <= 200) return 'heat-4';
+            if (cantidad <= 250) return 'heat-5';
+            if (cantidad <= 300) return 'heat-6';
+            if (cantidad <= 400) return 'heat-7';
+            if (cantidad <= 500) return 'heat-8';
+            if (cantidad <= 750) return 'heat-9';
+            return 'heat-10';
+        }
+
+        function buscarProductoHeatmap(query) {
+            const placeholder = document.getElementById('heatmapPlaceholder');
+            const results = document.getElementById('heatmapResults');
+            
+            if (query.length < 2) {
+                placeholder.style.display = 'block';
+                results.style.display = 'none';
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            results.style.display = 'block';
+
+            const sucursalFiltro = document.getElementById('heatmapSucursal').value;
+            const mesFiltro = document.getElementById('heatmapMes').value;
+            const queryLower = query.toLowerCase();
+
+            // Filtrar productos que coincidan con la búsqueda
+            let productosCoincidentes = productosUnicos.filter(p => 
+                p.nombre.toLowerCase().includes(queryLower) || 
+                p.codigo.toString().includes(query)
+            );
+
+            // Filtrar datos
+            let datosFiltrados = ventasData;
+            if (sucursalFiltro !== 'todas') {
+                datosFiltrados = datosFiltrados.filter(v => v.sucursal_nombre === sucursalFiltro);
+            }
+            
+            // Filtrar por mes o rango
+            if (mesFiltro) {
+                if (mesFiltro.startsWith('last')) {
+                    // Filtrar por rango (últimos X meses)
+                    const meses = parseInt(mesFiltro.replace('last', ''));
+                    const hoy = new Date();
+                    const fechaLimite = new Date(hoy.getFullYear(), hoy.getMonth() - meses, 1);
+                    const fechaLimiteStr = `${fechaLimite.getFullYear()}-${String(fechaLimite.getMonth() + 1).padStart(2, '0')}-01`;
+                    datosFiltrados = datosFiltrados.filter(v => v.fecha >= fechaLimiteStr);
+                } else {
+                    // Filtrar por mes específico
+                    datosFiltrados = datosFiltrados.filter(v => v.fecha.startsWith(mesFiltro));
+                }
+            }
+
+            // Calcular total del mes para cada producto
+            const productosConTotal = productosCoincidentes.map(producto => {
+                const totalMes = datosFiltrados
+                    .filter(v => v.codigo === producto.codigo)
+                    .reduce((sum, v) => sum + v.cantidad, 0);
+                return { ...producto, totalMes };
+            });
+
+            // Ordenar de mayor a menor por total del mes
+            productosConTotal.sort((a, b) => b.totalMes - a.totalMes);
+
+            // Limitar a 20 resultados DESPUÉS de ordenar
+            const productosOrdenados = productosConTotal.slice(0, 20);
+
+            // Obtener fechas únicas ordenadas
+            const fechasUnicas = Array.from(new Set(datosFiltrados.map(v => v.fecha))).sort();
+            
+            if (fechasUnicas.length === 0 || productosOrdenados.length === 0) {
+                document.getElementById('heatmapHeader').innerHTML = '<tr><th>Sin resultados</th></tr>';
+                document.getElementById('heatmapBody').innerHTML = '';
+                return;
+            }
+
+            // Generar encabezado
+            const header = document.getElementById('heatmapHeader');
+            let headerHTML = '<tr>';
+            headerHTML += '<th style="min-width: 80px;">Código</th>';
+            headerHTML += '<th class="product-name-cell">Descripción</th>';
+            headerHTML += '<th style="min-width: 60px;">UXB</th>';
+            
+            fechasUnicas.forEach(fecha => {
+                const fechaObj = new Date(fecha + 'T00:00:00');
+                const dia = String(fechaObj.getDate()).padStart(2, '0');
+                const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                headerHTML += `<th>${dia}/${mes}</th>`;
+            });
+            
+            headerHTML += '<th style="position: sticky; right: 0; background: var(--bg-tertiary); font-weight: bold; border-left: 2px solid var(--border); min-width: 80px;">Total Mes</th>';
+            headerHTML += '</tr>';
+            header.innerHTML = headerHTML;
+
+            // Generar filas
+            const body = document.getElementById('heatmapBody');
+            let bodyHTML = '';
+
+            productosOrdenados.forEach(producto => {
+                // Buscar UXB del producto desde PRODUCTOS (si existe)
+                let uxb = '-';
+                if (typeof PRODUCTOS !== 'undefined') {
+                    const productoData = PRODUCTOS.find(p => p.codigos == producto.codigo);
+                    uxb = productoData ? productoData.uxb : '-';
+                }
+
+                bodyHTML += '<tr>';
+                bodyHTML += `<td style="text-align: center;">${producto.codigo}</td>`;
+                bodyHTML += `<td class="product-name-cell">${producto.nombre}</td>`;
+                bodyHTML += `<td style="text-align: center;">${uxb}</td>`;
+                
+                fechasUnicas.forEach(fecha => {
+                    const ventasDia = datosFiltrados.filter(v => 
+                        v.codigo === producto.codigo && v.fecha === fecha
+                    );
+                    const cantidad = ventasDia.reduce((sum, v) => sum + v.cantidad, 0);
+                    const heatClass = getHeatClass(cantidad);
+                    const display = cantidad > 0 ? 
+                        `<span class="heat-indicator"><span class="heat-dot ${heatClass}"></span>${cantidad.toLocaleString()}</span>` : 
+                        `<span class="heat-indicator"><span class="heat-dot heat-0"></span>0</span>`;
+                    bodyHTML += `<td>${display}</td>`;
+                });
+                
+                bodyHTML += `<td style="position: sticky; right: 0; background: var(--bg-tertiary); font-weight: bold; border-left: 2px solid var(--border); color: #60a5fa; font-size: 16px;">${producto.totalMes.toLocaleString()}</td>`;
+                bodyHTML += '</tr>';
+            });
+
+            body.innerHTML = bodyHTML;
+        }
+
+        // HISTÓRICO MENSUAL
+        function inicializarFiltrosHistorico() {
+            // Poblar filtro de sucursales
+            const selectSucursal = document.getElementById('historicoSucursal');
+            sucursalesUnicas.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal;
+                option.textContent = `📍 ${sucursal}`;
+                selectSucursal.appendChild(option);
+            });
+        }
+
+        function buscarProductoHistorico(query) {
+            const placeholder = document.getElementById('historicoPlaceholder');
+            const results = document.getElementById('historicoResults');
+            
+            if (query.length < 2) {
+                placeholder.style.display = 'block';
+                results.style.display = 'none';
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            results.style.display = 'block';
+
+            const sucursalFiltro = document.getElementById('historicoSucursal').value;
+            const ordenFiltro = document.getElementById('historicoOrden').value;
+            const queryLower = query.toLowerCase();
+
+            // Filtrar productos que coincidan con la búsqueda
+            let productosCoincidentes = productosUnicos.filter(p => 
+                p.nombre.toLowerCase().includes(queryLower) || 
+                p.codigo.toString().includes(query)
+            );
+
+            // Filtrar datos
+            let datosFiltrados = ventasData;
+            if (sucursalFiltro !== 'todas') {
+                datosFiltrados = datosFiltrados.filter(v => v.sucursal_nombre === sucursalFiltro);
+            }
+
+            // Obtener todos los meses únicos y ordenarlos
+            const mesesSet = new Set();
+            datosFiltrados.forEach(v => {
+                const fecha = new Date(v.fecha + 'T00:00:00');
+                const mesAno = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                mesesSet.add(mesAno);
+            });
+            const mesesUnicos = Array.from(mesesSet).sort();
+
+            if (mesesUnicos.length === 0 || productosCoincidentes.length === 0) {
+                document.getElementById('historicoHeader').innerHTML = '<tr><th>Sin resultados</th></tr>';
+                document.getElementById('historicoBody').innerHTML = '';
+                return;
+            }
+
+            // Determinar el mes actual (último mes con datos)
+            const mesActual = mesesUnicos[mesesUnicos.length - 1];
+            const fechaMasReciente = datosFiltrados
+                .filter(v => v.fecha.startsWith(mesActual))
+                .map(v => v.fecha)
+                .sort()
+                .pop();
+
+            // Calcular ventas por mes para cada producto
+            const productosConMeses = productosCoincidentes.map(producto => {
+                const ventasPorMes = {};
+                let totalGeneral = 0;
+
+                mesesUnicos.forEach(mes => {
+                    const ventasMes = datosFiltrados
+                        .filter(v => v.codigo === producto.codigo && v.fecha.startsWith(mes))
+                        .reduce((sum, v) => sum + v.cantidad, 0);
+                    ventasPorMes[mes] = ventasMes;
+                    totalGeneral += ventasMes;
+                });
+
+                return {
+                    ...producto,
+                    ventasPorMes,
+                    totalGeneral
+                };
+            });
+
+            // Ordenar productos
+            if (ordenFiltro === 'total') {
+                productosConMeses.sort((a, b) => b.totalGeneral - a.totalGeneral);
+            } else {
+                productosConMeses.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            }
+
+            // Mostrar todos los productos encontrados (sin límite)
+
+            // Nombres de meses
+            const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            // Generar encabezado
+            const header = document.getElementById('historicoHeader');
+            let headerHTML = '<tr>';
+            headerHTML += '<th style="min-width: 80px;">Código</th>';
+            headerHTML += '<th class="product-name-cell">Descripción</th>';
+            
+            mesesUnicos.forEach(mes => {
+                const [ano, mesNum] = mes.split('-');
+                const nombreMes = nombresMeses[parseInt(mesNum) - 1];
+                const esMesActual = mes === mesActual;
+                const label = esMesActual ? `${nombreMes}-${ano.slice(2)}*` : `${nombreMes}-${ano.slice(2)}`;
+                headerHTML += `<th style="min-width: 80px;">${label}</th>`;
+            });
+            
+            headerHTML += '<th style="position: sticky; right: 0; background: var(--bg-tertiary); font-weight: bold; border-left: 2px solid var(--border); min-width: 100px;">Total</th>';
+            headerHTML += '</tr>';
+            header.innerHTML = headerHTML;
+
+            // Generar filas
+            const body = document.getElementById('historicoBody');
+            let bodyHTML = '';
+
+            productosConMeses.forEach(producto => {
+                bodyHTML += '<tr>';
+                bodyHTML += `<td style="text-align: center;">${producto.codigo}</td>`;
+                bodyHTML += `<td class="product-name-cell">${producto.nombre}</td>`;
+                
+                mesesUnicos.forEach(mes => {
+                    const cantidad = producto.ventasPorMes[mes] || 0;
+                    const heatClass = getHeatClass(cantidad);
+                    const display = cantidad > 0 ? 
+                        `<span class="heat-indicator"><span class="heat-dot ${heatClass}"></span>${cantidad.toLocaleString()}</span>` : 
+                        `<span class="heat-indicator"><span class="heat-dot heat-0"></span>0</span>`;
+                    bodyHTML += `<td style="text-align: center; font-weight: 600;">${display}</td>`;
+                });
+                
+                bodyHTML += `<td style="position: sticky; right: 0; background: var(--bg-tertiary); font-weight: bold; border-left: 2px solid var(--border); color: #60a5fa; font-size: 16px; text-align: center;">${producto.totalGeneral.toLocaleString()}</td>`;
+                bodyHTML += '</tr>';
+            });
+
+            body.innerHTML = bodyHTML;
+
+            // Actualizar mensaje de última actualización
+            const fechaObj = new Date(fechaMasReciente + 'T00:00:00');
+            const fechaFormateada = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            document.getElementById('historicoActualizacion').textContent = 
+                `* Mes actual con datos parciales hasta el ${fechaFormateada}`;
+        }
+
+        cargarDatos();
+    </script>
+</body>
+</html>
