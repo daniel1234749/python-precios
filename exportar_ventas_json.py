@@ -10,7 +10,7 @@ def exportar_ventas_a_json(dias_atras=90):
     try:
         print("🔌 Conectando a PostgreSQL...")
         conn = psycopg2.connect(
-            host="100.121.113.108",
+            host="localhost",
             port=5432,
             database="Precios",
             user="postgres",

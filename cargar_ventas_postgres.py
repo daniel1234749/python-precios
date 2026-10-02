@@ -71,7 +71,7 @@ def limpiar_y_cargar_ventas():
     try:
         print("\nConectando a PostgreSQL...")
         conn = psycopg2.connect(
-            host="100.121.113.108",
+            host="localhost",
             port=5432,
             database="Precios",  # ⚠️ Cambia si tu base de datos tiene otro nombre
             user="postgres",

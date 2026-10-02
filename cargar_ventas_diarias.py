@@ -108,7 +108,7 @@ def procesar_y_cargar_ventas(archivo_entrada):
     try:
         print("\n🔌 Conectando a PostgreSQL...")
         conn = psycopg2.connect(
-            host="100.121.113.108",
+            host="localhost",
             port=5432,
             database="Precios",
             user="postgres",

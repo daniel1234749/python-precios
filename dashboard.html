@@ -511,32 +511,19 @@
             background: var(--bg-tertiary);
         }
 
-       .product-name-cell {
-    position: sticky;
-    left: 80px;                      /* ← ahora empieza DESPUÉS del código */
-    background: var(--bg-secondary) !important;
-    text-align: left;
-    padding: 12px 16px;
-    min-width: 280px;
-    max-width: 280px;
-    font-weight: 600;
-    border-right: 2px solid var(--border);
-    z-index: 9;
-    white-space: normal;             /* ← permite que el texto haga wrap */
-    word-break: break-word;
-    overflow: visible;
-}
-
-.codigo-cell {
-    position: sticky;
-    left: 0;
-    background: var(--bg-secondary) !important;
-    z-index: 9;
-    text-align: center;
-    min-width: 80px;
-    max-width: 80px;
-    border-right: 1px solid var(--border);
-}
+        .product-name-cell {
+            position: sticky;
+            left: 0;
+            background: var(--bg-secondary) !important;
+            text-align: left;
+            padding: 12px 16px;
+            min-width: 350px;
+            font-weight: 600;
+            border-right: 2px solid var(--border);
+            z-index: 9;
+            white-space: nowrap;
+            overflow: visible;
+        }
 
         /* Pelotitas de colores - MÁS GRANDES E IMPACTANTES */
         .heat-indicator {
@@ -693,6 +680,7 @@
                 <button class="tab" onclick="switchTab('sucursales')">🏢 Sucursales</button>
                 <button class="tab" onclick="switchTab('heatmap')">🔥 Mapa de Calor</button>
                 <button class="tab" onclick="switchTab('historico')">📈 Histórico Mensual</button>
+                <button class="tab" onclick="switchTab('sinrotacion')">🔴 Sin Rotación</button>
             </div>
 
             <!-- Tab: Calendario -->
@@ -987,6 +975,55 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab: Sin Rotación -->
+            <div id="tabSinrotacion" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>🔴 Productos Sin Rotación - Alertas de Inactividad</h2>
+                    </div>
+
+                    <div class="alert alert-info">
+                        📊 Busca un categoría de productos para ver cuáles no tienen ventas y hace cuántos días
+                    </div>
+
+                    <div class="search-box-container" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" class="search-box" id="searchSinRotacion" 
+                               placeholder="🔍 Buscar categoría de producto... (presiona Enter)" 
+                               onkeypress="if(event.key === 'Enter') buscarProductosSinRotacion(this.value)"
+                               style="flex: 1; margin-bottom: 0;">
+                        <button class="btn btn-primary" onclick="buscarProductosSinRotacion(document.getElementById('searchSinRotacion').value)" style="white-space: nowrap;">
+                            Buscar
+                        </button>
+                    </div>
+
+                    <div class="filter-section">
+                        <select id="sinrotacionSucursal" onchange="buscarProductosSinRotacion(document.getElementById('searchSinRotacion').value)">
+                            <option value="todas">📍 Todas las sucursales</option>
+                        </select>
+                        <select id="sinrotacionDias" onchange="buscarProductosSinRotacion(document.getElementById('searchSinRotacion').value)">
+                            <option value="0">Mostrar: Todos sin venta</option>
+                            <option value="7">Mostrar: 7+ días sin venta</option>
+                            <option value="14">Mostrar: 14+ días sin venta</option>
+                            <option value="30">Mostrar: 30+ días sin venta</option>
+                            <option value="60">Mostrar: 60+ días sin venta</option>
+                        </select>
+                    </div>
+
+                    <div id="sinrotacionResults" style="display:none">
+                        <div class="heatmap-container">
+                            <table class="heatmap-table" id="sinrotacionTable">
+                                <thead id="sinrotacionHeader"></thead>
+                                <tbody id="sinrotacionBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="sinrotacionPlaceholder" class="alert alert-info">
+                        💡 Escribe al menos 2 caracteres para buscar productos
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1029,6 +1066,7 @@
                 cargarVentasPorSucursal();
                 inicializarFiltrosHeatmap();
                 inicializarFiltrosHistorico();
+                inicializarFiltrosSinRotacion();
                 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
@@ -1717,7 +1755,7 @@
             // Generar encabezado
             const header = document.getElementById('heatmapHeader');
             let headerHTML = '<tr>';
-            headerHTML += '<th class="codigo-cell" style="background: var(--bg-tertiary); z-index: 11;">Código</th>';
+            headerHTML += '<th style="min-width: 80px;">Código</th>';
             headerHTML += '<th class="product-name-cell">Descripción</th>';
             headerHTML += '<th style="min-width: 60px;">UXB</th>';
             
@@ -1745,7 +1783,7 @@
                 }
 
                 bodyHTML += '<tr>';
-               bodyHTML += `<td class="codigo-cell">${producto.codigo}</td>`;
+                bodyHTML += `<td style="text-align: center;">${producto.codigo}</td>`;
                 bodyHTML += `<td class="product-name-cell">${producto.nombre}</td>`;
                 bodyHTML += `<td style="text-align: center;">${uxb}</td>`;
                 
@@ -1867,7 +1905,7 @@
             // Generar encabezado
             const header = document.getElementById('historicoHeader');
             let headerHTML = '<tr>';
-            headerHTML += '<th class="codigo-cell" style="background: var(--bg-tertiary); z-index: 11;">Código</th>';
+            headerHTML += '<th style="min-width: 80px;">Código</th>';
             headerHTML += '<th class="product-name-cell">Descripción</th>';
             
             mesesUnicos.forEach(mes => {
@@ -1889,7 +1927,7 @@
             productosConMeses.forEach(producto => {
                 bodyHTML += '<tr>';
                 bodyHTML += `<td style="text-align: center;">${producto.codigo}</td>`;
-               bodyHTML += `<td class="codigo-cell">${producto.codigo}</td>`;
+                bodyHTML += `<td class="product-name-cell">${producto.nombre}</td>`;
                 
                 mesesUnicos.forEach(mes => {
                     const cantidad = producto.ventasPorMes[mes] || 0;
@@ -1911,6 +1949,188 @@
             const fechaFormateada = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             document.getElementById('historicoActualizacion').textContent = 
                 `* Mes actual con datos parciales hasta el ${fechaFormateada}`;
+        }
+
+        // SIN ROTACIÓN
+        function inicializarFiltrosSinRotacion() {
+            // Poblar filtro de sucursales
+            const selectSucursal = document.getElementById('sinrotacionSucursal');
+            sucursalesUnicas.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal;
+                option.textContent = `📍 ${sucursal}`;
+                selectSucursal.appendChild(option);
+            });
+        }
+
+        function buscarProductosSinRotacion(query) {
+            const placeholder = document.getElementById('sinrotacionPlaceholder');
+            const results = document.getElementById('sinrotacionResults');
+            
+            if (query.length < 2) {
+                placeholder.style.display = 'block';
+                results.style.display = 'none';
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            results.style.display = 'block';
+
+            const sucursalFiltro = document.getElementById('sinrotacionSucursal').value;
+            const diasMinimos = parseInt(document.getElementById('sinrotacionDias').value);
+            const queryLower = query.toLowerCase();
+
+            // Encontrar fecha más reciente de datos (hoy de referencia)
+            const fechaMasReciente = ventasData.map(v => v.fecha).sort().pop();
+            const hoyReferencia = new Date(fechaMasReciente + 'T00:00:00');
+
+            // Filtrar productos que coincidan con la búsqueda
+            let productosCoincidentes = productosUnicos.filter(p => 
+                p.nombre.toLowerCase().includes(queryLower) || 
+                p.codigo.toString().includes(query)
+            );
+
+            if (productosCoincidentes.length === 0) {
+                document.getElementById('sinrotacionHeader').innerHTML = '<tr><th>Sin resultados</th></tr>';
+                document.getElementById('sinrotacionBody').innerHTML = '';
+                return;
+            }
+
+            let productosConInactividad = [];
+
+            if (sucursalFiltro === 'todas') {
+                // Para CADA sucursal, calcular inactividad
+                sucursalesUnicas.forEach(sucursal => {
+                    productosCoincidentes.forEach(producto => {
+                        const ventasProductoSucursal = ventasData.filter(v => 
+                            v.codigo === producto.codigo && v.sucursal_nombre === sucursal
+                        );
+
+                        let tieneVentas = ventasProductoSucursal.length > 0;
+                        let ultimaVenta = null;
+                        let diasSinVenta = 999999;
+                        let totalVentas = 0;
+
+                        if (tieneVentas) {
+                            ultimaVenta = ventasProductoSucursal.map(v => v.fecha).sort().pop();
+                            const ultimaVentaDate = new Date(ultimaVenta + 'T00:00:00');
+                            diasSinVenta = Math.floor((hoyReferencia - ultimaVentaDate) / (1000 * 60 * 60 * 24));
+                            totalVentas = ventasProductoSucursal.reduce((sum, v) => sum + v.cantidad, 0);
+                        }
+
+                        // Incluir si no tiene ventas o si supera los días mínimos
+                        if (!tieneVentas || diasSinVenta >= diasMinimos) {
+                            productosConInactividad.push({
+                                ...producto,
+                                ultimaVenta,
+                                diasSinVenta: tieneVentas ? diasSinVenta : 999999,
+                                totalVentas,
+                                sucursal: sucursal
+                            });
+                        }
+                    });
+                });
+            } else {
+                // Una sola sucursal
+                productosCoincidentes.forEach(producto => {
+                    const ventasProductoSucursal = ventasData.filter(v => 
+                        v.codigo === producto.codigo && v.sucursal_nombre === sucursalFiltro
+                    );
+
+                    let tieneVentas = ventasProductoSucursal.length > 0;
+                    let ultimaVenta = null;
+                    let diasSinVenta = 999999;
+                    let totalVentas = 0;
+
+                    if (tieneVentas) {
+                        ultimaVenta = ventasProductoSucursal.map(v => v.fecha).sort().pop();
+                        const ultimaVentaDate = new Date(ultimaVenta + 'T00:00:00');
+                        diasSinVenta = Math.floor((hoyReferencia - ultimaVentaDate) / (1000 * 60 * 60 * 24));
+                        totalVentas = ventasProductoSucursal.reduce((sum, v) => sum + v.cantidad, 0);
+                    }
+
+                    // Incluir si no tiene ventas o si supera los días mínimos
+                    if (!tieneVentas || diasSinVenta >= diasMinimos) {
+                        productosConInactividad.push({
+                            ...producto,
+                            ultimaVenta,
+                            diasSinVenta: tieneVentas ? diasSinVenta : 999999,
+                            totalVentas,
+                            sucursal: sucursalFiltro
+                        });
+                    }
+                });
+            }
+
+            // Ordenar por días sin venta (descendente)
+            productosConInactividad.sort((a, b) => b.diasSinVenta - a.diasSinVenta);
+
+            if (productosConInactividad.length === 0) {
+                document.getElementById('sinrotacionHeader').innerHTML = '<tr><th>Sin resultados</th></tr>';
+                document.getElementById('sinrotacionBody').innerHTML = '';
+                return;
+            }
+
+            // Generar encabezado
+            const header = document.getElementById('sinrotacionHeader');
+            let headerHTML = '<tr>';
+            headerHTML += '<th class="codigo-cell" style="background: var(--bg-tertiary); z-index: 11;">Código</th>';
+            headerHTML += '<th class="product-name-cell">Descripción</th>';
+            headerHTML += '<th style="min-width: 120px; color: #ef4444;">DÍAS SIN VENTA</th>';
+            headerHTML += '<th style="min-width: 60px;">UXB</th>';
+            headerHTML += '<th style="min-width: 90px;">Última venta</th>';
+            headerHTML += '<th style="min-width: 80px;">Total período</th>';
+            
+            if (sucursalFiltro === 'todas') {
+                headerHTML += '<th style="min-width: 120px;">Sucursal</th>';
+            }
+            
+            headerHTML += '</tr>';
+            header.innerHTML = headerHTML;
+
+            // Generar filas
+            const body = document.getElementById('sinrotacionBody');
+            let bodyHTML = '';
+
+            productosConInactividad.forEach(producto => {
+                // Buscar UXB
+                let uxb = '-';
+                if (typeof PRODUCTOS !== 'undefined') {
+                    const productoData = PRODUCTOS.find(p => p.codigos == producto.codigo);
+                    uxb = productoData ? productoData.uxb : '-';
+                }
+
+                // Determinar color por días sin venta
+                let colorDias = '#60a5fa'; // Azul por defecto
+                if (producto.diasSinVenta >= 60) {
+                    colorDias = '#ef4444'; // Rojo crítico
+                } else if (producto.diasSinVenta >= 30) {
+                    colorDias = '#f97316'; // Naranja
+                } else if (producto.diasSinVenta >= 14) {
+                    colorDias = '#eab308'; // Amarillo
+                } else if (producto.diasSinVenta >= 7) {
+                    colorDias = '#06b6d4'; // Cyan
+                }
+
+                // Si diasSinVenta es 999999, significa nunca tuvo ventas
+                const diasDisplay = producto.diasSinVenta === 999999 ? '∞' : producto.diasSinVenta;
+
+                bodyHTML += '<tr>';
+                bodyHTML += `<td class="codigo-cell">${producto.codigo}</td>`;
+                bodyHTML += `<td class="product-name-cell">${producto.nombre}</td>`;
+                bodyHTML += `<td style="text-align: center; font-size: 18px; font-weight: bold; color: ${colorDias};">${diasDisplay}</td>`;
+                bodyHTML += `<td style="text-align: center;">${uxb}</td>`;
+                bodyHTML += `<td style="text-align: center;">${producto.ultimaVenta ? new Date(producto.ultimaVenta + 'T00:00:00').toLocaleDateString('es-AR') : 'Nunca'}</td>`;
+                bodyHTML += `<td style="text-align: center;">${producto.totalVentas.toLocaleString()} un.</td>`;
+                
+                if (sucursalFiltro === 'todas') {
+                    bodyHTML += `<td style="text-align: center; font-weight: 600;">📍 ${producto.sucursal}</td>`;
+                }
+                
+                bodyHTML += '</tr>';
+            });
+
+            body.innerHTML = bodyHTML;
         }
 
         cargarDatos();
